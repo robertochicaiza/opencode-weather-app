@@ -6,6 +6,12 @@
   "devDependencies": {
     "@types/bun": "latest"
   },
+  "scripts": {
+    "build":"bun build --compile index.ts --outfile weather",
+    "start": "bun run index.ts ",
+    "dev": "bun run index.ts --watch"
+
+  },
   "peerDependencies": {
     "typescript": "^7"
   }
