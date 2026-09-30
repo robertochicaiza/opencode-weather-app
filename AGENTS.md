@@ -9,7 +9,7 @@ lives in `src/`, split by responsibility:
 | File | Owns |
 | --- | --- |
 | `src/types.ts` | `City`, `Weather`, `Forecast`, `ForecastDay`, `HourPoint`, `HourlyForecast`, `Config`, `Settings`, `TemperatureUnit` (types only) |
-| `src/colors.ts` | `cyan`, `yellow`, `green`, `red` (ANSI, sin dependencias) |
+| `src/colors.ts` | `cyan`, `yellow`, `blue`, `magenta` (ANSI, sin dependencias) |
 | `src/config.ts` | `~/.weather-cli/config.json` load/save, defaults on corrupt input |
 | `src/api.ts` | Open-Meteo `searchCity` / `fetchWeather` / `fetchForecast` / `fetchHourly` + the raw response shapes |
 | `src/format.ts` | WMO code map, `cityLabel`, `printWeather`, `printForecast`, `printHourly`, `toMessage` |
@@ -126,9 +126,15 @@ From `tsconfig.json` (`noEmit`, `noUnusedLocals: false`, etc.):
   `selectCity`, passing only the prompt text.
 - Goal is a compiled executable, so prefer Bun-native APIs (`Bun.file`, `fetch`) over
   Node `fs`/polyfills.
-- Palette is fixed: `cyan` for the menu, `yellow` for temperature values, `green` for
-  confirmations, `red` for errors. Purely informational messages stay uncolored. Don't
-  add bold/dim or new hues.
+- Palette is fixed: `cyan` (96) for the menu, `yellow` (93) for temperature values, `blue` (94)
+  for confirmations, `magenta` (95) for errors. Purely informational messages stay uncolored.
+  Don't add bold/dim or new hues.
+- Helpers are named after the tone they paint, not their role — the tone is the only thing
+  that lives in `colors.ts`, so repainting the app means editing four numbers there and
+  nothing else. Don't inline a raw `\x1b[..m` at a call site to "just try" a color.
+- The palette uses the **bright** ANSI range 90-97 on purpose. The 30-37 range gets
+  overridden by the terminal theme (Windows Terminal in particular), and `33` renders as a
+  washed-out yellow that is hard to read in the dense temperature column.
 - `colors.ts` self-disables when `NO_COLOR` is set or `process.stdout.isTTY` is falsy, so
   the redirected smoke tests emit plain text. Never wrap a `cityLabel(...)` alone — paint
   the whole sentence.

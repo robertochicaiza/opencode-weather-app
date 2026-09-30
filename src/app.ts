@@ -1,4 +1,4 @@
-import { red } from "./colors.ts";
+import { magenta } from "./colors.ts";
 import { loadConfig } from "./config.ts";
 import { showMenu } from "./menu.ts";
 import {
@@ -54,7 +54,7 @@ export async function main(): Promise<void> {
           console.log("\n  ¡Hasta luego!\n");
           return;
         default:
-          console.log(red("\n  Opción no válida."));
+          console.log(magenta("\n  Opción no válida."));
       }
     }
   } finally {

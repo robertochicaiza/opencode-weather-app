@@ -5,17 +5,17 @@ function paint(code: number, text: string): string {
 }
 
 export function cyan(text: string): string {
-  return paint(36, text);
+  return paint(96, text);
 }
 
 export function yellow(text: string): string {
-  return paint(33, text);
+  return paint(93, text);
 }
 
-export function green(text: string): string {
-  return paint(32, text);
+export function blue(text: string): string {
+  return paint(94, text);
 }
 
-export function red(text: string): string {
-  return paint(31, text);
+export function magenta(text: string): string {
+  return paint(95, text);
 }
