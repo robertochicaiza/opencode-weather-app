@@ -1,9 +1,11 @@
+import { cyan } from "./colors.ts";
 import { cityLabel } from "./format.ts";
 import type { Config } from "./types.ts";
 
 export function showMenu(config: Config): void {
   const unit = config.settings.unit === "fahrenheit" ? "°F" : "°C";
-  console.log(`
+  console.log(
+    cyan(`
 ═══════════════════════════════════════
          WEATHER CLI
 ═══════════════════════════════════════
@@ -12,9 +14,12 @@ export function showMenu(config: Config): void {
   3. Buscar y agregar ciudad
   4. Eliminar ciudad
   5. Establecer ciudad default
+  6. Pronóstico 5 días
+  7. Pronóstico por horas
   8. Ajustes (${unit})
   9. Salir
-═══════════════════════════════════════`);
+═══════════════════════════════════════`),
+  );
 }
 
 export function listCities(config: Config): void {

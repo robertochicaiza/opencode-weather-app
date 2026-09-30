@@ -1,3 +1,4 @@
+import { red } from "./colors.ts";
 import { loadConfig } from "./config.ts";
 import { showMenu } from "./menu.ts";
 import {
@@ -6,6 +7,8 @@ import {
   setDefaultCity,
   showAllCities,
   showDefaultCity,
+  showForecast,
+  showHourly,
   toggleUnit,
 } from "./options.ts";
 import { ask, LineReader } from "./reader.ts";
@@ -38,6 +41,12 @@ export async function main(): Promise<void> {
         case "5":
           await setDefaultCity(config, reader);
           break;
+        case "6":
+          await showForecast(config, reader);
+          break;
+        case "7":
+          await showHourly(config, reader);
+          break;
         case "8":
           await toggleUnit(config);
           break;
@@ -45,7 +54,7 @@ export async function main(): Promise<void> {
           console.log("\n  ¡Hasta luego!\n");
           return;
         default:
-          console.log("\n  Opción no válida.");
+          console.log(red("\n  Opción no válida."));
       }
     }
   } finally {

@@ -1,4 +1,5 @@
-import type { City, Weather } from "./types.ts";
+import { yellow } from "./colors.ts";
+import type { City, Forecast, HourPoint, HourlyForecast, Weather } from "./types.ts";
 
 const WEATHER_CODES: Record<number, string> = {
   0: "Cielo despejado",
@@ -45,11 +46,79 @@ export function printWeather(city: City, weather: Weather): void {
   console.log(
     `  ${describeWeather(weather.weatherCode)}${weather.isDay ? "" : " · noche"}`,
   );
-  console.log(`  Temperatura: ${weather.temperature}${weather.temperatureUnit}`);
-  console.log(`  Sensación:   ${weather.apparentTemperature}${weather.temperatureUnit}`);
+  console.log(
+    `  Temperatura: ${yellow(`${weather.temperature}${weather.temperatureUnit}`)}`,
+  );
+  console.log(
+    `  Sensación:   ${yellow(`${weather.apparentTemperature}${weather.temperatureUnit}`)}`,
+  );
   console.log(`  Humedad:     ${weather.humidity}${weather.humidityUnit}`);
   console.log(`  Viento:      ${weather.windSpeed} ${weather.windUnit}`);
   console.log(`  Observado:   ${moment}`);
+}
+
+const WEEKDAYS = ["dom", "lun", "mar", "mié", "jue", "vie", "sáb"];
+
+function shortDate(date: string): string {
+  const parts = date.split("-");
+  return `${parts[1] ?? ""}/${parts[2] ?? ""}`;
+}
+
+function dayLabel(date: string, isToday: boolean): string {
+  const short = shortDate(date);
+  if (isToday) return `hoy ${short}`;
+  const weekday = WEEKDAYS[new Date(date).getUTCDay()] ?? "";
+  return `${weekday} ${short}`;
+}
+
+export function printForecast(city: City, forecast: Forecast): void {
+  const descriptions = forecast.days.map((day) =>
+    describeWeather(day.weatherCode),
+  );
+  const width = Math.max(...descriptions.map((text) => text.length));
+  console.log(`\n  ${cityLabel(city)}`);
+  console.log(`  Pronóstico ${forecast.days.length} días\n`);
+  forecast.days.forEach((day, index) => {
+    const range = yellow(
+      `${day.min}${forecast.temperatureUnit} – ${day.max}${forecast.temperatureUnit}`,
+    );
+    const description = (descriptions[index] ?? "").padEnd(width);
+    const label = dayLabel(day.date, index === 0).padEnd(9);
+    console.log(`  ${label} ${description}  ${range}`);
+  });
+}
+
+export function printHourly(city: City, forecast: HourlyForecast): void {
+  const today = forecast.currentHour.slice(0, 10);
+  const byDay = new Map<string, HourPoint[]>();
+  for (const point of forecast.hours) {
+    const day = point.time.slice(0, 10);
+    const group = byDay.get(day);
+    if (group) group.push(point);
+    else byDay.set(day, [point]);
+  }
+  const width = Math.max(
+    ...forecast.hours.map((point) => describeWeather(point.weatherCode).length),
+  );
+  console.log(`\n  ${cityLabel(city)}`);
+  console.log(`  Pronóstico por horas\n`);
+  let first = true;
+  for (const [day, points] of byDay) {
+    if (!first) console.log("");
+    first = false;
+    console.log(`  ${dayLabel(day, day === today)}`);
+    for (const point of points) {
+      const isNow =
+        point.time.slice(0, 13) === forecast.currentHour.slice(0, 13);
+      const clock = `${(point.time.split("T")[1] ?? "").slice(0, 5)}${isNow ? " ahora" : ""}`.padEnd(11);
+      const temperature = yellow(
+        `${point.temperature}${forecast.temperatureUnit}`.padStart(9),
+      );
+      const description = describeWeather(point.weatherCode).padEnd(width);
+      const rain = `lluvia ${String(point.precipitationProbability).padStart(3)}%`;
+      console.log(`    ${clock}${temperature}  ${description}  ${rain}`);
+    }
+  }
 }
 
 export function toMessage(error: unknown): string {

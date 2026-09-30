@@ -20,6 +20,31 @@ export type Config = {
   settings: Settings;
 };
 
+export type ForecastDay = {
+  date: string;
+  weatherCode: number;
+  max: number;
+  min: number;
+};
+
+export type Forecast = {
+  days: ForecastDay[];
+  temperatureUnit: string;
+};
+
+export type HourPoint = {
+  time: string;
+  temperature: number;
+  weatherCode: number;
+  precipitationProbability: number;
+};
+
+export type HourlyForecast = {
+  hours: HourPoint[];
+  currentHour: string;
+  temperatureUnit: string;
+};
+
 export type Weather = {
   time: string;
   temperature: number;

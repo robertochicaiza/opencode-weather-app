@@ -1,6 +1,13 @@
-import { fetchWeather, searchCity } from "./api.ts";
+import { fetchForecast, fetchHourly, fetchWeather, searchCity } from "./api.ts";
+import { green, red } from "./colors.ts";
 import { saveConfig } from "./config.ts";
-import { cityLabel, printWeather, toMessage } from "./format.ts";
+import {
+  cityLabel,
+  printForecast,
+  printHourly,
+  printWeather,
+  toMessage,
+} from "./format.ts";
 import { listCities } from "./menu.ts";
 import { ask, parseIndex } from "./reader.ts";
 import type { LineReader } from "./reader.ts";
@@ -18,7 +25,7 @@ async function pickCity(
   if (answer === null) return undefined;
   const index = parseIndex(answer, candidates.length);
   if (index === undefined) {
-    console.log("\n  Opción no válida.");
+    console.log(red("\n  Opción no válida."));
     return undefined;
   }
   return candidates[index];
@@ -32,7 +39,7 @@ async function showCityWeather(
     printWeather(city, await fetchWeather(city, unit));
   } catch (error) {
     console.log(`\n  ${cityLabel(city)}`);
-    console.log(`  Error al obtener el clima: ${toMessage(error)}`);
+    console.log(red(`  Error al obtener el clima: ${toMessage(error)}`));
   }
 }
 
@@ -65,7 +72,61 @@ export async function showAllCities(config: Config): Promise<void> {
   );
   for (const result of results) {
     if (result.weather) printWeather(result.city, result.weather);
-    else console.log(`\n  ${cityLabel(result.city)}\n  Error: ${result.error}`);
+    else console.log(`\n  ${cityLabel(result.city)}\n  ${red(`Error: ${result.error}`)}`);
+  }
+}
+
+async function selectCity(
+  config: Config,
+  reader: LineReader,
+  prompt: string,
+): Promise<City | undefined> {
+  if (config.cities.length === 0) {
+    console.log("\n  No hay ciudades guardadas. Usa la opción 3 para agregar una.");
+    return undefined;
+  }
+  listCities(config);
+  const answer = await ask(reader, prompt);
+  if (answer === null) return undefined;
+  const index = parseIndex(answer, config.cities.length);
+  if (index === undefined) {
+    console.log(red("\n  Opción no válida."));
+    return undefined;
+  }
+  return config.cities[index];
+}
+
+export async function showForecast(
+  config: Config,
+  reader: LineReader,
+): Promise<void> {
+  const city = await selectCity(config, reader, "  Ciudad para el pronóstico: ");
+  if (!city) return;
+  try {
+    printForecast(city, await fetchForecast(city, config.settings.unit));
+  } catch (error) {
+    console.log(`\n  ${cityLabel(city)}`);
+    console.log(red(`  Error al obtener el pronóstico: ${toMessage(error)}`));
+  }
+}
+
+export async function showHourly(
+  config: Config,
+  reader: LineReader,
+): Promise<void> {
+  const city = await selectCity(
+    config,
+    reader,
+    "  Ciudad para el pronóstico por horas: ",
+  );
+  if (!city) return;
+  try {
+    printHourly(city, await fetchHourly(city, config.settings.unit));
+  } catch (error) {
+    console.log(`\n  ${cityLabel(city)}`);
+    console.log(
+      red(`  Error al obtener el pronóstico por horas: ${toMessage(error)}`),
+    );
   }
 }
 
@@ -83,7 +144,7 @@ export async function addCity(
   try {
     results = await searchCity(name);
   } catch (error) {
-    console.log(`\n  Error al buscar la ciudad: ${toMessage(error)}`);
+    console.log(red(`\n  Error al buscar la ciudad: ${toMessage(error)}`));
     return;
   }
   if (results.length === 0) {
@@ -99,7 +160,7 @@ export async function addCity(
   }
   config.cities.push(city);
   await saveConfig(config);
-  console.log(`\n  ${cityLabel(city)} agregada.`);
+  console.log(green(`\n  ${cityLabel(city)} agregada.`));
 }
 
 export async function removeCity(
@@ -115,7 +176,7 @@ export async function removeCity(
   if (answer === null) return;
   const index = parseIndex(answer, config.cities.length);
   if (index === undefined) {
-    console.log("\n  Opción no válida.");
+    console.log(red("\n  Opción no válida."));
     return;
   }
   const city = config.cities[index];
@@ -128,7 +189,7 @@ export async function removeCity(
   }
   config.cities.splice(index, 1);
   await saveConfig(config);
-  console.log(`\n  ${cityLabel(city)} eliminada.`);
+  console.log(green(`\n  ${cityLabel(city)} eliminada.`));
 }
 
 export async function setDefaultCity(
@@ -144,14 +205,14 @@ export async function setDefaultCity(
   if (answer === null) return;
   const index = parseIndex(answer, config.cities.length);
   if (index === undefined) {
-    console.log("\n  Opción no válida.");
+    console.log(red("\n  Opción no válida."));
     return;
   }
   const city = config.cities[index];
   if (!city) return;
   config.defaultCity = city;
   await saveConfig(config);
-  console.log(`\n  Ciudad default: ${cityLabel(city)}`);
+  console.log(green(`\n  Ciudad default: ${cityLabel(city)}`));
 }
 
 export async function toggleUnit(config: Config): Promise<void> {
@@ -160,5 +221,5 @@ export async function toggleUnit(config: Config): Promise<void> {
   await saveConfig(config);
   const label =
     config.settings.unit === "fahrenheit" ? "°F (Fahrenheit)" : "°C (Celsius)";
-  console.log(`\n  Unidad de temperatura: ${label}`);
+  console.log(green(`\n  Unidad de temperatura: ${label}`));
 }
