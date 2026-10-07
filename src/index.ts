@@ -1,20 +1,22 @@
-import { magenta } from "./colors.ts";
-import { loadConfig } from "./config.ts";
-import { showMenu } from "./menu.ts";
-import {
-  addCity,
-  removeCity,
-  setDefaultCity,
-  showAllCities,
-  showDefaultCity,
-  showForecast,
-  showHourly,
-  toggleUnit,
-} from "./options.ts";
-import { ask, LineReader } from "./reader.ts";
+import { addCity } from "./actions/addCity.ts";
+import { removeCity } from "./actions/removeCity.ts";
+import { setDefaultCity } from "./actions/setDefaultCity.ts";
+import { showAllCities, showDefaultCity } from "./actions/getWeather.ts";
+import { showForecast } from "./actions/getForecast.ts";
+import { showHourly } from "./actions/getHourly.ts";
+import { toggleUnit } from "./actions/toggleUnit.ts";
+import { showMenu } from "./presentation/menu.ts";
+import { ask, isMenuOption, LineReader } from "./presentation/input.ts";
+import { loadCities } from "./storage/citiesStorage.ts";
+import { loadSettings } from "./storage/settingsStorage.ts";
+import { magenta } from "./utils/colors.ts";
+import type { Config } from "./types/Config.ts";
 
-export async function main(): Promise<void> {
-  const config = await loadConfig();
+async function main(): Promise<void> {
+  const config: Config = {
+    ...(await loadCities()),
+    settings: await loadSettings(),
+  };
   const reader = new LineReader(process.stdin, process.stdout);
   console.log("\n  Bienvenido a WEATHER CLI.");
   try {
@@ -24,6 +26,10 @@ export async function main(): Promise<void> {
       if (choice === null) {
         console.log("");
         return;
+      }
+      if (!isMenuOption(choice)) {
+        console.log(magenta("\n  Opción no válida."));
+        continue;
       }
       switch (choice) {
         case "1":
@@ -53,11 +59,11 @@ export async function main(): Promise<void> {
         case "9":
           console.log("\n  ¡Hasta luego!\n");
           return;
-        default:
-          console.log(magenta("\n  Opción no válida."));
       }
     }
   } finally {
     reader.close();
   }
 }
+
+await main();

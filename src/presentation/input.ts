@@ -1,5 +1,18 @@
 import { createInterface } from "node:readline/promises";
 import type { Interface } from "node:readline/promises";
+import type { MenuOption } from "../types/MenuOption.ts";
+
+const MENU_OPTIONS: readonly MenuOption[] = [
+  "1",
+  "2",
+  "3",
+  "4",
+  "5",
+  "6",
+  "7",
+  "8",
+  "9",
+];
 
 export class LineReader {
   #rl: Interface;
@@ -58,4 +71,8 @@ export function parseIndex(
   const index = Number.parseInt(answer, 10);
   if (!Number.isInteger(index) || index < 1 || index > length) return undefined;
   return index - 1;
+}
+
+export function isMenuOption(value: string): value is MenuOption {
+  return (MENU_OPTIONS as readonly string[]).includes(value);
 }

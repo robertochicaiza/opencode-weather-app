@@ -1,6 +1,5 @@
-import { cyan } from "./colors.ts";
-import { cityLabel } from "./format.ts";
-import type { Config } from "./types.ts";
+import { cyan } from "../utils/colors.ts";
+import type { Config } from "../types/Config.ts";
 
 export function showMenu(config: Config): void {
   const unit = config.settings.unit === "fahrenheit" ? "°F" : "°C";
@@ -20,12 +19,4 @@ export function showMenu(config: Config): void {
   9. Salir
 ═══════════════════════════════════════`),
   );
-}
-
-export function listCities(config: Config): void {
-  console.log("\n  Ciudades guardadas:");
-  config.cities.forEach((city, index) => {
-    const marker = config.defaultCity?.id === city.id ? " (default)" : "";
-    console.log(`   ${index + 1}. ${cityLabel(city)}${marker}`);
-  });
 }

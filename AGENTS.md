@@ -2,71 +2,77 @@
 
 ## Layout
 
-`index.ts` is a 3-line entrypoint (`import { main } from "./src/app.ts"; await main();`)
-kept at the root so `package.json`'s `"module": "index.ts"` stays valid. Everything else
-lives in `src/`, split by responsibility:
+`src/index.ts` is the entrypoint (`await main()` at the bottom of the file) — the root
+`index.ts` was removed; `package.json`'s `"module"` and scripts point at `src/index.ts`.
+The layout follows `references/file-system.md`:
 
-| File | Owns |
+| Path | Owns |
 | --- | --- |
-| `src/types.ts` | `City`, `Weather`, `Forecast`, `ForecastDay`, `HourPoint`, `HourlyForecast`, `Config`, `Settings`, `TemperatureUnit` (types only) |
-| `src/colors.ts` | `cyan`, `yellow`, `blue`, `magenta` (ANSI, sin dependencias) |
-| `src/config.ts` | `~/.weather-cli/config.json` load/save, defaults on corrupt input |
-| `src/api.ts` | Open-Meteo `searchCity` / `fetchWeather` / `fetchForecast` / `fetchHourly` + the raw response shapes |
-| `src/format.ts` | WMO code map, `cityLabel`, `printWeather`, `printForecast`, `printHourly`, `toMessage` |
-| `src/reader.ts` | `LineReader`, `ask`, `parseIndex` (console input) |
-| `src/menu.ts` | `showMenu`, `listCities` |
-| `src/options.ts` | the ten menu handlers + `pickCity`, `selectCity`, `showCityWeather` |
-| `src/app.ts` | `main()` loop and the option `switch` |
+| `src/index.ts` | `main()` loop, the option `switch`, assembling `Config` from both storages |
+| `src/actions/` | one file per menu action: `getWeather.ts` (1, 2), `addCity.ts` (3, +`pickCity`), `removeCity.ts` (4), `setDefaultCity.ts` (5), `getForecast.ts` (6), `getHourly.ts` (7), `toggleUnit.ts` (8), plus shared `listCities.ts` and `selectCity.ts` |
+| `src/presentation/` | `menu.ts` (`showMenu`), `output.ts` (`printWeather`, `printForecast`, `printHourly`), `input.ts` (`LineReader`, `ask`, `parseIndex`, `isMenuOption`) |
+| `src/storage/` | `citiesStorage.ts` (`~/.weather-cli/cities.json`), `settingsStorage.ts` (`~/.weather-cli/settings.json`), legacy `config.json` fallback |
+| `src/types/` | one concept per file: `City.ts`, `Weather.ts`, `Forecast.ts` (+`ForecastDay`), `HourlyForecast.ts` (+`HourPoint`), `Config.ts` (+`Settings`), `TemperatureUnit.ts`, `MenuOption.ts` (types only) |
+| `src/api/` | `geocoding.ts` (`searchCity`), `weather.ts` (`fetchWeather` / `fetchForecast` / `fetchHourly`) + the raw response shapes |
+| `src/utils/` | `format.ts` (WMO code map, `cityLabel`, `dayLabel`, `toMessage`), `constants.ts` (Open-Meteo URLs, field lists, `HOUR_STEP`), `colors.ts` (`cyan`, `yellow`, `blue`, `magenta`) |
 
 `README.md` is the spec. Do **not** re-run `bun init` (the README's "Inicializar proyecto"
 step is already done).
 
-Note the layer direction: `options.ts` is the only module that orchestrates. `format.ts`,
-`menu.ts`, and `reader.ts` know nothing about each other, and `types.ts` is types-only so
-it is fully erased at build time (import it with `import type`).
+Note the layer direction: `src/actions/` is the only layer that orchestrates.
+`presentation/`, `storage/`, `api/`, and `utils/` never import from `actions/`, and
+`types/` is types-only so it is fully erased at build time (import it with `import type`).
 
-`colors.ts` is a leaf: it imports nothing from the project, so any module may use it
-without creating a cycle. Reach for it instead of inlining `\x1b[..m` in a template literal.
+`src/utils/colors.ts` is a leaf: it imports nothing from the project, so any module may
+use it without creating a cycle. Reach for it instead of inlining `\x1b[..m` in a template
+literal.
 
 ## Build
 
 ```
-bun run index.ts                    # dev
-bun build --compile index.ts --outfile dist/weather-cli.exe   # standalone binary
+bun start                      # dev  (bun run src/index.ts)
+bun run build                  # standalone binary → ./weather(.exe)
 ```
 
-`dist/` is already gitignored, which is why the binary goes there. The compiled binary
-must be runnable from any directory, so config is **not** cwd-relative.
+The binary lands at the project root (`weather` is gitignored; note `weather.exe` on
+Windows is what `bun build --compile` actually writes). The compiled binary must be
+runnable from any directory, so config is **not** cwd-relative.
 
 ## Config storage
 
-State lives at `~/.weather-cli/config.json` (`homedir()` from `node:os` + `join`), not in
-the project. Shape: `{ defaultCity, cities[], settings: { unit } }`. Loaded defensively —
-missing file, malformed JSON, or a hand-edited file all fall back to defaults instead of
-crashing. `Bun.write` creates missing parent directories, so no `mkdir` is needed.
+State lives in `~/.weather-cli/` (`homedir()` from `node:os` + `join`), not in the project:
+
+- `cities.json` — `{ defaultCity, cities[] }`, owned by `storage/citiesStorage.ts`
+- `settings.json` — `{ unit }`, owned by `storage/settingsStorage.ts`
+
+When a file is missing, both loaders fall back to the legacy single-file
+`~/.weather-cli/config.json` (pre-split shape `{ defaultCity, cities[], settings: { unit } }`)
+and migrate it by writing the new file on that first load. Everything is loaded
+defensively — missing file, malformed JSON, or a hand-edited file all fall back to defaults
+instead of crashing. `Bun.write` creates missing parent directories, so no `mkdir` is needed.
 
 ## Gotcha that cost real debugging time
 
 Do **not** call `rl.question()` in a loop from `node:readline/promises`. Repeated calls
 silently drop input that was already buffered, so piped input stalls forever after the
-first line. `src/reader.ts` uses a `LineReader` class instead: one persistent `"line"`
+first line. `src/presentation/input.ts` uses a `LineReader` class instead: one persistent `"line"`
 listener that pushes into a queue, plus a `"close"` listener that resolves pending reads
 with `null` so EOF ends the app instead of spinning on empty input.
 
-To smoke-test non-interactively, redirect a file into stdin (`cmd /c "bun run index.ts <
+To smoke-test non-interactively, redirect a file into stdin (`cmd /c "bun run src/index.ts <
 session.txt"`) — piping through PowerShell's `Get-Content` mangles the stream and hangs.
 
 
 ## Commands
 
-There is **no `scripts` block** in `package.json`, so `bun run <script>` does not work.
-Run these directly:
+`package.json` has a `scripts` block, so the short forms work:
 
 | Task | Command |
 | --- | --- |
-| Run | `bun run index.ts` |
+| Run | `bun start` (equivalently `bun run src/index.ts`) |
+| Build | `bun run build` → `weather(.exe)` |
 | Typecheck | `bunx tsc --noEmit` |
-| Test | `bun test` (currently 0 test files) |
+| Test | `bun test` (0 test files — it exits with an error saying so) |
 
 - Use `bun` for everything — `bun.lock` is the only lockfile. Don't run `npm`/`yarn`
   install; it will create a competing lockfile.
@@ -84,8 +90,8 @@ From `tsconfig.json` (`noEmit`, `noUnusedLocals: false`, etc.):
 - `verbatimModuleSyntax: true` — every type-only import must be `import type { X } from ...`.
   Value imports of types will fail typecheck.
 - `allowImportingTsExtensions: true` — relative imports should keep the `.ts` extension
-  (`./menu.ts`, not `./menu`). Bun resolves it; the `moduleResolution: "bundler"` setup
-  requires it.
+  (`./presentation/menu.ts`, not `./presentation/menu`). Bun resolves it; the
+  `moduleResolution: "bundler"` setup requires it.
 - `noUncheckedIndexedAccess: true` — `arr[0]` and `obj[key]` are `T | undefined`. Array and
   record lookups need an explicit guard, including after known-safe `while` loops.
 - `noEmit: true` — there is no compile step for typecheck purposes. The standalone binary
@@ -121,25 +127,25 @@ From `tsconfig.json` (`noEmit`, `noUnusedLocals: false`, etc.):
 - `fetchHourly` owns the business rules so `printHourly` stays a printer: drop past hours,
   keep every 3rd one (`HOUR_STEP`) so blocks are anchored on "ahora", and throw if nothing
   is left. If `current` is missing it degrades to the full day from 00:00.
-- `options.ts` has two city pickers and they must stay in sync: `pickCity` searches the
-  geocoder results, `selectCity` picks from `config.cities`. Options 6 and 7 share
-  `selectCity`, passing only the prompt text.
+- The two city pickers must stay in sync: `pickCity` (in `actions/addCity.ts`) searches the
+  geocoder results, `selectCity` (its own file in `actions/`) picks from `config.cities`.
+  Options 6 and 7 share `selectCity`, passing only the prompt text.
 - Goal is a compiled executable, so prefer Bun-native APIs (`Bun.file`, `fetch`) over
   Node `fs`/polyfills.
 - Palette is fixed: `cyan` (96) for the menu, `yellow` (93) for temperature values, `blue` (94)
   for confirmations, `magenta` (95) for errors. Purely informational messages stay uncolored.
   Don't add bold/dim or new hues.
 - Helpers are named after the tone they paint, not their role — the tone is the only thing
-  that lives in `colors.ts`, so repainting the app means editing four numbers there and
+  that lives in `utils/colors.ts`, so repainting the app means editing four numbers there and
   nothing else. Don't inline a raw `\x1b[..m` at a call site to "just try" a color.
 - The palette uses the **bright** ANSI range 90-97 on purpose. The 30-37 range gets
   overridden by the terminal theme (Windows Terminal in particular), and `33` renders as a
   washed-out yellow that is hard to read in the dense temperature column.
-- `colors.ts` self-disables when `NO_COLOR` is set or `process.stdout.isTTY` is falsy, so
+- `utils/colors.ts` self-disables when `NO_COLOR` is set or `process.stdout.isTTY` is falsy, so
   the redirected smoke tests emit plain text. Never wrap a `cityLabel(...)` alone — paint
   the whole sentence.
 
 ## Repo hygiene
 
-Single git commit (`2dcedcb`), `private: true`, nothing is published. `.env` files are
-gitignored but unused so far.
+`private: true`, nothing is published. `.env` files are gitignored but unused so far.
+`weather.exe` at the root is tracked but rewritten by every `bun run build`.

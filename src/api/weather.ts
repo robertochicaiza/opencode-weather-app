@@ -1,35 +1,17 @@
-import type {
-  City,
-  Forecast,
-  ForecastDay,
-  HourPoint,
-  HourlyForecast,
-  TemperatureUnit,
-  Weather,
-} from "./types.ts";
-
-const GEOCODING_URL = "https://geocoding-api.open-meteo.com/v1/search";
-const FORECAST_URL = "https://api.open-meteo.com/v1/forecast";
-const CURRENT_FIELDS =
-  "temperature_2m,relative_humidity_2m,apparent_temperature,is_day,weather_code,wind_speed_10m";
-const DAILY_FIELDS = "weather_code,temperature_2m_max,temperature_2m_min";
-const FORECAST_DAYS = 5;
-const HOURLY_FIELDS =
-  "temperature_2m,weather_code,precipitation_probability";
-const HOURLY_DAYS = 3;
-const HOUR_STEP = 3;
-
-type GeocodingResponse = {
-  results?: {
-    id: number;
-    name: string;
-    latitude: number;
-    longitude: number;
-    country?: string;
-    admin1?: string;
-    timezone?: string;
-  }[];
-};
+import {
+  CURRENT_FIELDS,
+  DAILY_FIELDS,
+  FORECAST_DAYS,
+  FORECAST_URL,
+  HOURLY_DAYS,
+  HOURLY_FIELDS,
+  HOUR_STEP,
+} from "../utils/constants.ts";
+import type { City } from "../types/City.ts";
+import type { Forecast, ForecastDay } from "../types/Forecast.ts";
+import type { HourPoint, HourlyForecast } from "../types/HourlyForecast.ts";
+import type { TemperatureUnit } from "../types/TemperatureUnit.ts";
+import type { Weather } from "../types/Weather.ts";
 
 type ForecastResponse = {
   current_units?: Record<string, string>;
@@ -64,24 +46,6 @@ type HourlyResponse = {
     precipitation_probability: number[];
   };
 };
-
-export async function searchCity(name: string): Promise<City[]> {
-  const url = `${GEOCODING_URL}?name=${encodeURIComponent(name)}&count=5&language=es&format=json`;
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error(`el servicio de búsqueda respondió ${response.status}`);
-  }
-  const data = (await response.json()) as GeocodingResponse;
-  return (data.results ?? []).map((result) => ({
-    id: result.id,
-    name: result.name,
-    latitude: result.latitude,
-    longitude: result.longitude,
-    country: result.country ?? "",
-    admin1: result.admin1 ?? "",
-    timezone: result.timezone ?? "",
-  }));
-}
 
 export async function fetchWeather(
   city: City,
