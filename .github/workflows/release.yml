@@ -36,16 +36,7 @@ jobs:
   build:
     needs: version
     if: github.event_name == 'workflow_dispatch' || needs.version.outputs.exists == 'false'
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - { os: ubuntu-latest,    asset: weather-linux-x64 }
-          - { os: ubuntu-24.04-arm, asset: weather-linux-arm64 }
-          - { os: macos-13,         asset: weather-darwin-x64 }
-          - { os: macos-latest,     asset: weather-darwin-arm64 }
-          - { os: windows-latest,   asset: weather-windows-x64.exe }
-    runs-on: ${{ matrix.os }}
+    runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
@@ -53,12 +44,11 @@ jobs:
       - run: bun run build
       - name: Rename binary
         shell: bash
-        run: |
-          if [ -f weather.exe ]; then mv weather.exe "${{ matrix.asset }}"; else mv weather "${{ matrix.asset }}"; fi
+        run: mv weather.exe weather-windows-x64.exe
       - uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.asset }}
-          path: ${{ matrix.asset }}
+          name: weather-windows-x64.exe
+          path: weather-windows-x64.exe
           if-no-files-found: error
 
   release:
