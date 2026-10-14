@@ -90,7 +90,7 @@ export async function fetchForecast(
   daily.time.forEach((date, index) => {
     const max = daily.temperature_2m_max?.[index];
     const min = daily.temperature_2m_min?.[index];
-    if (max === undefined || min === undefined) return;
+    if (max == null || min == null) return;
     days.push({
       date,
       weatherCode: daily.weather_code?.[index] ?? 0,
@@ -125,7 +125,7 @@ export async function fetchHourly(
   hourly.time.forEach((time, index) => {
     if (from && time.slice(0, 13) < from) return;
     const temperature = hourly.temperature_2m?.[index];
-    if (temperature === undefined) return;
+    if (temperature == null) return;
     points.push({
       time,
       temperature,

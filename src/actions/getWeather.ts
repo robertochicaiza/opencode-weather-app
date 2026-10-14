@@ -5,6 +5,7 @@ import { cityLabel, toMessage } from "../utils/format.ts";
 import type { City } from "../types/City.ts";
 import type { Config } from "../types/Config.ts";
 import type { TemperatureUnit } from "../types/TemperatureUnit.ts";
+import { println } from "../utils/print.ts";
 
 async function showCityWeather(
   city: City,
@@ -13,15 +14,15 @@ async function showCityWeather(
   try {
     printWeather(city, await fetchWeather(city, unit));
   } catch (error) {
-    console.log(`\n  ${cityLabel(city)}`);
-    console.log(magenta(`  Error al obtener el clima: ${toMessage(error)}`));
+    println(`\n  ${cityLabel(city)}`);
+    println(magenta(`  Error al obtener el clima: ${toMessage(error)}`));
   }
 }
 
 export async function showDefaultCity(config: Config): Promise<void> {
   const city = config.defaultCity;
   if (!city) {
-    console.log("\n  No hay ciudad default. Usa la opción 5 para establecerla.");
+    println("\n  No hay ciudad default. Usa la opción 5 para establecerla.");
     return;
   }
   await showCityWeather(city, config.settings.unit);
@@ -29,7 +30,7 @@ export async function showDefaultCity(config: Config): Promise<void> {
 
 export async function showAllCities(config: Config): Promise<void> {
   if (config.cities.length === 0) {
-    console.log("\n  No hay ciudades guardadas. Usa la opción 3 para agregar una.");
+    println("\n  No hay ciudades guardadas. Usa la opción 3 para agregar una.");
     return;
   }
   const defaultCity = config.defaultCity;
@@ -47,6 +48,6 @@ export async function showAllCities(config: Config): Promise<void> {
   );
   for (const result of results) {
     if (result.weather) printWeather(result.city, result.weather);
-    else console.log(`\n  ${cityLabel(result.city)}\n  ${magenta(`Error: ${result.error}`)}`);
+    else println(`\n  ${cityLabel(result.city)}\n  ${magenta(`Error: ${result.error}`)}`);
   }
 }

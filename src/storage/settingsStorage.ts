@@ -1,10 +1,19 @@
-import { homedir } from "node:os";
+import os from "node:os";
 import { join } from "node:path";
 import type { Settings } from "../types/Config.ts";
+import { println } from "../utils/print.ts";
 
-const CONFIG_DIR = join(homedir(), ".weather-cli");
-const SETTINGS_PATH = join(CONFIG_DIR, "settings.json");
-const LEGACY_PATH = join(CONFIG_DIR, "config.json");
+function configDir(): string {
+  return join(os.homedir(), ".weather-cli");
+}
+
+function settingsPath(): string {
+  return join(configDir(), "settings.json");
+}
+
+function legacyPath(): string {
+  return join(configDir(), "config.json");
+}
 
 async function readJson(path: string): Promise<Record<string, unknown> | undefined> {
   const file = Bun.file(path);
@@ -12,7 +21,7 @@ async function readJson(path: string): Promise<Record<string, unknown> | undefin
   try {
     return (await file.json()) as Record<string, unknown>;
   } catch {
-    console.log(
+    println(
       `\n  No se pudo leer ${path}. Se usará la configuración por defecto.`,
     );
     return undefined;
@@ -20,9 +29,9 @@ async function readJson(path: string): Promise<Record<string, unknown> | undefin
 }
 
 export async function loadSettings(): Promise<Settings> {
-  let saved = await readJson(SETTINGS_PATH);
-  const fromLegacy = saved === undefined && (await Bun.file(LEGACY_PATH).exists());
-  if (fromLegacy) saved = await readJson(LEGACY_PATH);
+  let saved = await readJson(settingsPath());
+  const fromLegacy = saved === undefined && (await Bun.file(legacyPath()).exists());
+  if (fromLegacy) saved = await readJson(legacyPath());
   const nested = saved?.settings as { unit?: unknown } | undefined;
   const unit =
     saved?.unit === "fahrenheit" || nested?.unit === "fahrenheit"
@@ -34,5 +43,5 @@ export async function loadSettings(): Promise<Settings> {
 }
 
 export async function saveSettings(settings: Settings): Promise<void> {
-  await Bun.write(SETTINGS_PATH, `${JSON.stringify(settings, null, 2)}\n`);
+  await Bun.write(settingsPath(), `${JSON.stringify(settings, null, 2)}\n`);
 }

@@ -7,9 +7,11 @@
     "@types/bun": "latest"
   },
   "scripts": {
-    "build": "bun build --compile src/index.ts --outfile weather",
+    "build": "bun test && bun build --compile src/index.ts --outfile weather",
     "start": "bun run src/index.ts",
-    "dev": "bun run src/index.ts --watch"
+    "dev": "bun run src/index.ts --watch",
+    "test": "bun test",
+    "test:watch": "bun test --watch"
   },
   "peerDependencies": {
     "typescript": "^7"

@@ -1,11 +1,20 @@
-import { homedir } from "node:os";
+import os from "node:os";
 import { join } from "node:path";
 import type { Config } from "../types/Config.ts";
 import type { City } from "../types/City.ts";
+import { println } from "../utils/print.ts";
 
-const CONFIG_DIR = join(homedir(), ".weather-cli");
-const CITIES_PATH = join(CONFIG_DIR, "cities.json");
-const LEGACY_PATH = join(CONFIG_DIR, "config.json");
+function configDir(): string {
+  return join(os.homedir(), ".weather-cli");
+}
+
+function citiesPath(): string {
+  return join(configDir(), "cities.json");
+}
+
+function legacyPath(): string {
+  return join(configDir(), "config.json");
+}
 
 type StoredCities = Pick<Config, "defaultCity" | "cities">;
 
@@ -15,7 +24,7 @@ async function readJson(path: string): Promise<Record<string, unknown> | undefin
   try {
     return (await file.json()) as Record<string, unknown>;
   } catch {
-    console.log(
+    println(
       `\n  No se pudo leer ${path}. Se usará la configuración por defecto.`,
     );
     return undefined;
@@ -23,9 +32,9 @@ async function readJson(path: string): Promise<Record<string, unknown> | undefin
 }
 
 export async function loadCities(): Promise<StoredCities> {
-  let saved = await readJson(CITIES_PATH);
-  const fromLegacy = saved === undefined && (await Bun.file(LEGACY_PATH).exists());
-  if (fromLegacy) saved = await readJson(LEGACY_PATH);
+  let saved = await readJson(citiesPath());
+  const fromLegacy = saved === undefined && (await Bun.file(legacyPath()).exists());
+  if (fromLegacy) saved = await readJson(legacyPath());
   const stored: StoredCities = {
     defaultCity: (saved?.defaultCity as City | null | undefined) ?? null,
     cities: Array.isArray(saved?.cities) ? (saved.cities as City[]) : [],
@@ -35,5 +44,5 @@ export async function loadCities(): Promise<StoredCities> {
 }
 
 export async function saveCities(stored: StoredCities): Promise<void> {
-  await Bun.write(CITIES_PATH, `${JSON.stringify(stored, null, 2)}\n`);
+  await Bun.write(citiesPath(), `${JSON.stringify(stored, null, 2)}\n`);
 }

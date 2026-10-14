@@ -1,7 +1,9 @@
-const enabled = !process.env.NO_COLOR && Boolean(process.stdout.isTTY);
+function enabled(): boolean {
+  return !process.env.NO_COLOR && Boolean(process.stdout.isTTY);
+}
 
 function paint(code: number, text: string): string {
-  return enabled ? `\x1b[${code}m${text}\x1b[0m` : text;
+  return enabled() ? `\x1b[${code}m${text}\x1b[0m` : text;
 }
 
 export function cyan(text: string): string {

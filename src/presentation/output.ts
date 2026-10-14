@@ -4,22 +4,23 @@ import type { City } from "../types/City.ts";
 import type { Forecast } from "../types/Forecast.ts";
 import type { HourPoint, HourlyForecast } from "../types/HourlyForecast.ts";
 import type { Weather } from "../types/Weather.ts";
+import { println } from "../utils/print.ts";
 
 export function printWeather(city: City, weather: Weather): void {
   const moment = weather.time.replace("T", " ");
-  console.log(`\n  ${cityLabel(city)}`);
-  console.log(
+  println(`\n  ${cityLabel(city)}`);
+  println(
     `  ${describeWeather(weather.weatherCode)}${weather.isDay ? "" : " · noche"}`,
   );
-  console.log(
+  println(
     `  Temperatura: ${yellow(`${weather.temperature}${weather.temperatureUnit}`)}`,
   );
-  console.log(
+  println(
     `  Sensación:   ${yellow(`${weather.apparentTemperature}${weather.temperatureUnit}`)}`,
   );
-  console.log(`  Humedad:     ${weather.humidity}${weather.humidityUnit}`);
-  console.log(`  Viento:      ${weather.windSpeed} ${weather.windUnit}`);
-  console.log(`  Observado:   ${moment}`);
+  println(`  Humedad:     ${weather.humidity}${weather.humidityUnit}`);
+  println(`  Viento:      ${weather.windSpeed} ${weather.windUnit}`);
+  println(`  Observado:   ${moment}`);
 }
 
 export function printForecast(city: City, forecast: Forecast): void {
@@ -27,15 +28,15 @@ export function printForecast(city: City, forecast: Forecast): void {
     describeWeather(day.weatherCode),
   );
   const width = Math.max(...descriptions.map((text) => text.length));
-  console.log(`\n  ${cityLabel(city)}`);
-  console.log(`  Pronóstico ${forecast.days.length} días\n`);
+  println(`\n  ${cityLabel(city)}`);
+  println(`  Pronóstico ${forecast.days.length} días\n`);
   forecast.days.forEach((day, index) => {
     const range = yellow(
       `${day.min}${forecast.temperatureUnit} – ${day.max}${forecast.temperatureUnit}`,
     );
     const description = (descriptions[index] ?? "").padEnd(width);
     const label = dayLabel(day.date, index === 0).padEnd(9);
-    console.log(`  ${label} ${description}  ${range}`);
+    println(`  ${label} ${description}  ${range}`);
   });
 }
 
@@ -51,13 +52,13 @@ export function printHourly(city: City, forecast: HourlyForecast): void {
   const width = Math.max(
     ...forecast.hours.map((point) => describeWeather(point.weatherCode).length),
   );
-  console.log(`\n  ${cityLabel(city)}`);
-  console.log(`  Pronóstico por horas\n`);
+  println(`\n  ${cityLabel(city)}`);
+  println(`  Pronóstico por horas\n`);
   let first = true;
   for (const [day, points] of byDay) {
-    if (!first) console.log("");
+    if (!first) println("");
     first = false;
-    console.log(`  ${dayLabel(day, day === today)}`);
+    println(`  ${dayLabel(day, day === today)}`);
     for (const point of points) {
       const isNow =
         point.time.slice(0, 13) === forecast.currentHour.slice(0, 13);
@@ -67,7 +68,7 @@ export function printHourly(city: City, forecast: HourlyForecast): void {
       );
       const description = describeWeather(point.weatherCode).padEnd(width);
       const rain = `lluvia ${String(point.precipitationProbability).padStart(3)}%`;
-      console.log(`    ${clock}${temperature}  ${description}  ${rain}`);
+      println(`    ${clock}${temperature}  ${description}  ${rain}`);
     }
   }
 }

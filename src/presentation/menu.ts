@@ -1,9 +1,10 @@
 import { cyan } from "../utils/colors.ts";
 import type { Config } from "../types/Config.ts";
+import { println } from "../utils/print.ts";
 
 export function showMenu(config: Config): void {
   const unit = config.settings.unit === "fahrenheit" ? "°F" : "°C";
-  console.log(
+  println(
     cyan(`
 ═══════════════════════════════════════
          WEATHER CLI

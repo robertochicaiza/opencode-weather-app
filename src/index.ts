@@ -11,6 +11,7 @@ import { loadCities } from "./storage/citiesStorage.ts";
 import { loadSettings } from "./storage/settingsStorage.ts";
 import { magenta } from "./utils/colors.ts";
 import type { Config } from "./types/Config.ts";
+import { println } from "./utils/print.ts";
 
 async function main(): Promise<void> {
   const config: Config = {
@@ -18,17 +19,17 @@ async function main(): Promise<void> {
     settings: await loadSettings(),
   };
   const reader = new LineReader(process.stdin, process.stdout);
-  console.log("\n  Bienvenido a WEATHER CLI.");
+  println("\n  Bienvenido a WEATHER CLI.");
   try {
     while (true) {
       showMenu(config);
       const choice = await ask(reader, "  Selecciona una opción: ");
       if (choice === null) {
-        console.log("");
+        println("");
         return;
       }
       if (!isMenuOption(choice)) {
-        console.log(magenta("\n  Opción no válida."));
+        println(magenta("\n  Opción no válida."));
         continue;
       }
       switch (choice) {
@@ -57,7 +58,7 @@ async function main(): Promise<void> {
           await toggleUnit(config);
           break;
         case "9":
-          console.log("\n  ¡Hasta luego!\n");
+          println("\n  ¡Hasta luego!\n");
           return;
       }
     }
